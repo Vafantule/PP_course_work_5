@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 
 from .models import Habit
+from .pagination import HabitPagination
 from .serializers import HabitSerializer
 from .permissions import IsOwnerOrReadOnly
 
@@ -21,6 +22,7 @@ class HabitViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["action", "place", "reward"]
     ordering_fields = ["created_at", "updated_at", "periodicity_days"]
+    pagination_class = HabitPagination
 
     def get_queryset(self):
         user = getattr(self.request, "use", None)

@@ -1,9 +1,12 @@
 from typing import Dict, Any
 
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from .models import Habit
 from .validators import HabitValidator
+
+User = get_user_model()
 
 
 class HabitSerializer(serializers.ModelSerializer):

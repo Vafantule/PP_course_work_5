@@ -1,6 +1,32 @@
-from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
+from typing import Optional, Any
+
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.db import models
 from django.utils import timezone
+
+
+class UserManager(BaseUserManager):
+    """
+    Менеджер для модели User.
+    """
+    def create_user(self, email: str, password: Optional[str] = None, **extra_fields: Any) -> "User":
+        if not email:
+            raise ValueError("Email обязателен для заполнения.")
+        email_normalized: str = self.normalize_email(email)
+        user: "User" = self.model(email=email_normalized, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email: str, password: str, **extra_fields: Any) -> "User":
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("is_active", True)
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError("Суперпользователь должен иметь is_staff=True")
+        if extra_fields.get("is-superuser") is not True:
+            raise ValueError("Суперпользователь должен иметь is_superuser=True")
+        return self.create_user(email, password, **extra_fields)
 
 
 class User(AbstractBaseUser, PermissionsMixin):

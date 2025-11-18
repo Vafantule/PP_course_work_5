@@ -51,7 +51,7 @@ class Habit(models.Model):
     class Meta:
         verbose_name = "Привычка"
         verbose_name_plural = "Привычки"
-        ordering = ["0created_at"]
+        ordering = ["created_at"]
 
     def __str__(self) -> str:
         return f"{self.creator} - {self.action[:50]}"

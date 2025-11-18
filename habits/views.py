@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from django.db import models
 from django.shortcuts import get_object_or_404
@@ -25,13 +25,18 @@ class HabitViewSet(viewsets.ModelViewSet):
     pagination_class = HabitPagination
 
     def get_queryset(self):
-        user = getattr(self.request, "use", None)
-        if user and user.is_authenticated:
+        user: Optional[Any]  = getattr(self.request, "use", None)
+        if user and getattr(user, "is_authenticated", False):
             return Habit.objects.filter(models.Q(is_public=True) | models.Q(creator=user))
         return Habit.objects.filter(is_public=True)
 
     def perform_create(self, serializer: Any) -> None:
         serializer.save(creator=self.request.user)
+
+    def perform_update(self, serializer: HabitSerializer) -> None:
+        instance: Habit = self.get_object()
+        self.check_object_permissions(self.request, instance)
+        serializer.save()
 
     def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Response:
         instance = self.get_object()

@@ -32,7 +32,8 @@ INSTALLED_APPS = [
     "django_filters",
     "drf_yasg",
     "django_celery_beat",
-    "habits"
+    "habits",
+    "users",
 ]
 
 REST_FRAMEWORK = {
@@ -137,7 +138,7 @@ MEDIA_URL = '/media/'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# AUTH_USER_MODEL = 'users.User'
+AUTH_USER_MODEL = 'users.User'
 
 # Default primary key field type
 

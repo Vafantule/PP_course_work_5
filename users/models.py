@@ -40,8 +40,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True, verbose_name="Активность учётной записи")
     date_joined = models.DateTimeField(default=timezone.now, verbose_name="Даты и времени регистрации")
 
+    objects: UserManager = UserManager()
+
     USERNAME_FIELD: str = "email"
     REQUIRED_FIELDS: list[str] = []
+
 
     class Meta:
         verbose_name = "пользователь"

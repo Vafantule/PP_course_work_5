@@ -12,8 +12,8 @@ class HabitValidator:
         is_rewarding: Optional[bool] = attrs.get("is_rewarding")
         related_habit: Optional[Any] = attrs.get("related_habit")
         reward: Optional[str] = attrs.get("reward")
-        duration_seconds = Optional[int] = attrs.get("duration_seconds")
-        periodicity_days = Optional[int] = attrs.get("periodicity_days")
+        duration_seconds: Optional[int] = attrs.get("duration_seconds")
+        periodicity_days: Optional[int] = attrs.get("periodicity_days")
 
         if (related_habit is not None) and (reward not in (None, "", b"", False)):
             raise serializers.ValidationError({

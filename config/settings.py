@@ -32,7 +32,8 @@ INSTALLED_APPS = [
     "django_filters",
     "drf_yasg",
     "django_celery_beat",
-    "habits"
+    "habits",
+    "users",
 ]
 
 REST_FRAMEWORK = {
@@ -45,6 +46,13 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.BasicAuthentication",
     ),
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=50),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": False,
 }
 
 MIDDLEWARE = [
@@ -130,7 +138,7 @@ MEDIA_URL = '/media/'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# AUTH_USER_MODEL = 'users.User'
+AUTH_USER_MODEL = 'users.User'
 
 # Default primary key field type
 

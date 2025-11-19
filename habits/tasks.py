@@ -29,14 +29,14 @@ def send_due_habit_reminders(self) -> Dict[str, Any]:
     """
     Habit, User = _get_models()
     time_now = timezone.localtime()
-    logger.debug("Запуск send_due_habit_reminders в &s", time_now)
+    logger.debug("Запуск send_due_habit_reminders в %s", time_now)
 
     window_start = (time_now - timedelta(seconds=30)).time()
     window_end =  (time_now + timedelta(seconds=30)).time()
 
-    due_queryset = (models.Q(time_of_days__isnull=False) &
-                    models.Q(time_of_days__gte=window_start) &
-                    models.Q(time_of_days__lte=window_end))
+    due_queryset = (models.Q(time_of_day__isnull=False) &
+                    models.Q(time_of_day__gte=window_start) &
+                    models.Q(time_of_day__lte=window_end))
     due_habits = Habit.objects.filter(due_queryset)
 
     client = TelegramClient()
@@ -50,8 +50,8 @@ def send_due_habit_reminders(self) -> Dict[str, Any]:
                             user,
                             habit.id)
                 continue
-            text = (f"Напоминание: время выполнить привычку - {habit.action}. "
-                    f"Место: {habit.place or 'не указано'}."
+            text = (f"Напоминание: время выполнить привычку - {habit.action}.\n"
+                    f"Место: {habit.place or 'не указано'}.\n"
                     f"Вознаграждение: {habit.reward or 'не указано'}")
             result = client.send_message(chat_id=str(chat_id), message=text, parse_mode="Markdown")
             sent.append(

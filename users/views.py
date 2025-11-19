@@ -3,7 +3,7 @@ from typing import Any
 from rest_framework import generics, status
 from rest_framework.response import Response
 
-from users.serializers import RegistrationSerializer
+from .serializers import RegistrationSerializer
 
 
 class RegistrationView(generics.CreateAPIView):
@@ -16,5 +16,5 @@ class RegistrationView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
-        header = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=header)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)

@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "django_filters",
     "drf_yasg",
     "django_celery_beat",
+    "corsheaders",
     "habits",
     "users",
 ]
@@ -63,6 +64,13 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
+]
+
+CORS_ALLOW_ALL_ORIGINS = bool(os.getenv("CORS_ALLOW_ALL_ORIGINS", "False") == "True")
+CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = [
+    "https://read-and-write.example.com",
 ]
 
 ROOT_URLCONF = "config.urls"

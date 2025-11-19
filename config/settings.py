@@ -180,7 +180,7 @@ CELERY_TASK_TIME_LIMIT = 30 * 60
 
 CELERY_BEAT_SCHEDULE = {
     "send-due-habit-reminders-every-minute": {
-        "task": "reminders.tasks.send_due_habit_reminders",
+        "task": "habits.tasks.send_due_habit_reminders",
         "schedule": 60.0,
         "args": (),
     },

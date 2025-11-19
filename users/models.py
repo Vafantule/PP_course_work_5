@@ -39,6 +39,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False, verbose_name="Является ли пользователь сотрудником")
     is_active = models.BooleanField(default=True, verbose_name="Активность учётной записи")
     date_joined = models.DateTimeField(default=timezone.now, verbose_name="Даты и времени регистрации")
+    telegram_chat_id = models.CharField(max_length=64, blank=True, null=True, verbose_name="Telegram chat id")
 
     objects: UserManager = UserManager()
 

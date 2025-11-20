@@ -2,11 +2,13 @@ from typing import Any, Dict
 from unittest.mock import patch, Mock
 
 import requests
-from django.test import TestCase
+import config.celery as celery_module
+from django.test import TestCase, SimpleTestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase, APIClient
 from datetime import time
+from celery import Celery
 
 from .models import Habit
 from .services import TelegramClient
@@ -125,3 +127,23 @@ class TelegramClientTests(TestCase):
             or ("400" in str(http_description).lower()),
             msg=f"Неожиданное описание ошибки: {http_description}"
         )
+
+
+class CeleryConfigTests(SimpleTestCase):
+    """
+    Тесты конфигурации Celery.
+    """
+    def test_app_object_exists(self) -> None:
+        self.assertTrue(hasattr(celery_module, "app"),
+                        msg="Модуль config.celery должен предоставлять атрибут `app`")
+
+    def test_app_is_celery_instance(self) -> None:
+        app: Any = getattr(celery_module, "app", None)
+        self.assertIsInstance(app, Celery, msg="config.celery.app должен быть экземпляром celery.Celery")
+
+    def test_autodiscover_tasks_in_callable(self):
+        app: Any = getattr(celery_module, "app", None)
+        self.assertTrue(hasattr(app, "autodiscover_tasks"),
+                        msg="Приложение Celery должно иметь метод autodiscover_tasks")
+        self.assertTrue(callable(getattr(app, "autodiscover_tasks")),
+                        msg="autodiscover_tasks должен быть доступен для вызова")

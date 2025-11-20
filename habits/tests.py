@@ -1,17 +1,21 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 from unittest.mock import patch, Mock
 
 import requests
+
 import config.celery as celery_module
 from django.test import TestCase, SimpleTestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
+from django.utils import timezone
+
 from rest_framework.test import APITestCase, APIClient
-from datetime import time
+from datetime import datetime, time
 from celery import Celery
 
 from .models import Habit
 from .services import TelegramClient
+from .tasks import send_due_habit_reminders
 
 User = get_user_model()
 
@@ -23,9 +27,9 @@ class HabitAPITests(APITestCase):
     def setUp(self):
         self.client: APIClient = APIClient()
         self.owner_password = "tgRe951"
-        self.owner = User.objects.create_user(email="test_2@exampl.com", password=self.owner_password)
+        self.owner = User.objects.create_user(email="test_2@example.com", password=self.owner_password)
         self.other_password = "tgRe951"
-        self.other = User.objects.create_user(email="test_3@exampl.com", password=self.other_password)
+        self.other = User.objects.create_user(email="test_3@example.com", password=self.other_password)
 
     def _get_token_for_user(self, email: str, password: str) -> str:
         url = reverse("users:token_obtain_pair")
@@ -147,3 +151,43 @@ class CeleryConfigTests(SimpleTestCase):
                         msg="Приложение Celery должно иметь метод autodiscover_tasks")
         self.assertTrue(callable(getattr(app, "autodiscover_tasks")),
                         msg="autodiscover_tasks должен быть доступен для вызова")
+
+
+
+class SendDueHabitRemindersTests(TestCase):
+    """
+    Тесты конфигурации tasks (периодические задания).
+    """
+    def setUp(self) -> None:
+        self.user_with_chat: User = User.objects.create_user(email="test_4@example.com", password="pass1234")
+        self.user_with_chat.telegram_chat_id = "12345678"
+        self.user_with_chat.save()
+        self.user_without_chat: User = User.objects.create_user(email="test_5@example.com", password="pass1234")
+        now: datetime = timezone.localtime()
+        self.fixed_now: datetime = timezone.make_aware(
+            datetime(year=now.year, month=now.month, day=now.day,
+                     hour=now.hour, minute=now.minute, second=now.second),
+            timezone.get_current_timezone()
+        )
+
+    @patch("habits.tasks.TelegramClient.send_message")
+    @patch("habits.tasks.timezone.localtime")
+    def test_send_message_for_due_habit(self, mock_localtime: Mock, mock_send: Mock) -> None:
+        mock_localtime.return_value = self.fixed_now
+        due_habit: Habit = Habit.objects.create(
+            creator=self.user_with_chat,
+            action="Test action",
+            is_public=False,
+            periodicity_days=1,
+            time_of_day=self.fixed_now.time(),
+        )
+        mock_send.return_value = {"ok": True, "result": {"message_id": 1}}
+        result: Dict[str, Any] = send_due_habit_reminders.run()
+        self.assertEqual(result.get("count_due"), 1, msg=f"Ожидается одна привычка, на выходе: {result}")
+        self.assertTrue(mock_send.called,
+                        msg=f"Ожидается, что TelegramClient.send_message будет вызван по привычке. Результат={result}")
+        called_args, called_kwargs = mock_send.call_args
+        combined = " ".join([str(called_args), str(called_kwargs)])
+        self.assertIn(str(self.user_with_chat.telegram_chat_id), combined,
+                      msg=f"Ожидаемый chat_id {self.user_with_chat.telegram_chat_id} "
+                          f"в send_message аргументы вызова: {combined}")

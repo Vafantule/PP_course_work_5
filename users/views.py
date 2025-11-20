@@ -44,7 +44,6 @@ class RegistrationView(generics.CreateAPIView):
             400: "Validation error (пароли не совпадают или неверный формат)",
         }
     )
-
     def create(self, request: Any, *args: Any, **kwargs: Any) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)

@@ -176,7 +176,7 @@ class SendDueHabitRemindersTests(TestCase):
         mock_localtime.return_value = self.fixed_now
         due_habit: Habit = Habit.objects.create(
             creator=self.user_with_chat,
-            action="Test action",
+            action="Тестовое действие",
             is_public=False,
             periodicity_days=1,
             time_of_day=self.fixed_now.time(),
@@ -191,3 +191,19 @@ class SendDueHabitRemindersTests(TestCase):
         self.assertIn(str(self.user_with_chat.telegram_chat_id), combined,
                       msg=f"Ожидаемый chat_id {self.user_with_chat.telegram_chat_id} "
                           f"в send_message аргументы вызова: {combined}")
+
+    @patch("habits.tasks.TelegramClient.send_message")
+    @patch("habits.tasks.timezone.localtime")
+    def test_skip_id_no_chat_id(self, mock_localtime: Mock, mock_send: Mock) -> None:
+        mock_localtime.return_value = self.fixed_now
+        due_habit: Habit = Habit.objects.create(
+            creator=self.user_without_chat,
+            action="Другое тестовое действие",
+            is_public=False,
+            periodicity_days=1,
+            time_of_day=self.fixed_now.time(),
+        )
+        result: Dict[str, Any] = send_due_habit_reminders.run()
+        mock_send.assert_not_called()
+        self.assertEqual(result.get("sent"), [])
+        self.assertEqual(result.get("count_due"), 1)

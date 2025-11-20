@@ -1,6 +1,7 @@
 from typing import Any, Dict
 from unittest.mock import patch, Mock
 
+import requests
 from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
@@ -100,3 +101,27 @@ class TelegramClientTests(TestCase):
         result: Dict[str, Any] = self.client.send_message(chat_id="12345", message="Test")
         self.assertTrue(result.get("ok", False))
         self.assertIn("result", result)
+
+    @patch("habits.services.requests.post")
+    def test_send_message_chat_not_fount(self, mock_post: Mock) -> None:
+        mock_response = Mock()
+        http_error = requests.HTTPError("400 Ошибка клиента: неверный запрос URL")
+        http_error.response = mock_response
+        mock_response.json.return_value = {
+            "ok": False,
+            "error_code": 400,
+            "description": "Bad Request: chat not found"
+        }
+        mock_response.status_code = 400
+        mock_response.raise_for_status.side_effect = http_error
+        mock_post.return_value = mock_response
+        result = self.client.send_message(chat_id="1722262177", message="Test")
+        self.assertFalse(result.get("ok", True))
+        http_description = result.get("http_description") or result.get("error") or ""
+        self.assertIsNotNone(http_description)
+        self.assertTrue(
+            ("chat not found" in str(http_description).lower())
+            or ("bad request" in str(http_description).lower())
+            or ("400" in str(http_description).lower()),
+            msg=f"Неожиданное описание ошибки: {http_description}"
+        )

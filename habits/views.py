@@ -28,7 +28,7 @@ class HabitViewSet(viewsets.ModelViewSet):
     pagination_class = HabitPagination
 
     def get_queryset(self):
-        user: Optional[Any]  = getattr(self.request, "use", None)
+        user: Optional[Any]  = getattr(self.request, "user", None)
         if user and getattr(user, "is_authenticated", False):
             return Habit.objects.filter(models.Q(is_public=True) | models.Q(creator=user))
         return Habit.objects.filter(is_public=True)

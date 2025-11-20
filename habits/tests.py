@@ -1,10 +1,14 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict
+from unittest.mock import patch, Mock
+
+from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase, APIClient
 from datetime import time
 
 from .models import Habit
+from .services import TelegramClient
 
 User = get_user_model()
 
@@ -77,3 +81,22 @@ class HabitAPITests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token_owner}")
         response_ok = self.client.delete(delete_url)
         self.assertEqual(response_ok.status_code, 204)
+
+
+class TelegramClientTests(TestCase):
+    """
+    Тестирование TelegramClient.
+    """
+    def setUp(self) -> None:
+        self.client = TelegramClient(token="TEST_TOKEN")
+
+    @patch("habits.services.requests.post")
+    def test_send_message_success(self, mock_post: Mock) -> None:
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = {"ok": True, "result": {"message_id": 1}}
+        mock_response.status_code = 200
+        mock_post.return_value = mock_response
+        result: Dict[str, Any] = self.client.send_message(chat_id="12345", message="Test")
+        self.assertTrue(result.get("ok", False))
+        self.assertIn("result", result)

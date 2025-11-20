@@ -1,8 +1,11 @@
 from typing import Any, Optional
 
 from django.db import models
-from django.shortcuts import get_object_or_404
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+
 from rest_framework import viewsets, filters, status
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 
@@ -37,6 +40,33 @@ class HabitViewSet(viewsets.ModelViewSet):
         instance: Habit = self.get_object()
         self.check_object_permissions(self.request, instance)
         serializer.save()
+
+    @swagger_auto_schema(
+        method="post",
+        operation_summary="Отметить привычку как выполненную",
+        operation_description="Пометка выполнения привычки",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "note": openapi.Schema(type=openapi.TYPE_STRING, description="Заметка о выполнении"),
+            },
+        ),
+        responses={
+            200: openapi.Response(description="Привычка отмечена как выполненная"),
+            404: "не найдено",
+        },
+    )
+    @action(detail=True, methods=["post"], url_path="mark_done")
+    def mark_done(self, request: Any, pk: int) -> Response:
+        habit: Habit = self.get_object()
+        note: Optional[str] = request.data.get("note")
+        return Response(
+            {
+                "detail": f"Привычка {habit.pk} отмечена как выполненная",
+                "note": note,
+            },
+            status=status.HTTP_200_OK
+        )
 
     def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Response:
         instance = self.get_object()

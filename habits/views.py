@@ -1,18 +1,18 @@
 from typing import Any, Optional
 
 from django.db import models
-from drf_yasg.utils import swagger_auto_schema
+from django.db.models.query import QuerySet
 from drf_yasg import openapi
-
-from rest_framework import viewsets, filters, status
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 
 from .models import Habit
 from .pagination import HabitPagination
-from .serializers import HabitSerializer
 from .permissions import IsOwnerOrReadOnly
+from .serializers import HabitSerializer
 
 
 class HabitViewSet(viewsets.ModelViewSet):
@@ -27,8 +27,8 @@ class HabitViewSet(viewsets.ModelViewSet):
     ordering_fields = ["created_at", "updated_at", "periodicity_days"]
     pagination_class = HabitPagination
 
-    def get_queryset(self):
-        user: Optional[Any]  = getattr(self.request, "user", None)
+    def get_queryset(self) -> QuerySet[Habit]:
+        user: Optional[Any] = getattr(self.request, "user", None)
         if user and getattr(user, "is_authenticated", False):
             return Habit.objects.filter(models.Q(is_public=True) | models.Q(creator=user))
         return Habit.objects.filter(is_public=True)

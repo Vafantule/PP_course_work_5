@@ -3,11 +3,10 @@ from datetime import timedelta
 from typing import Any, Dict, List
 
 from celery import shared_task
-from django.utils import timezone
 from django.db import models
+from django.utils import timezone
 
 from .services import TelegramClient
-
 
 logger = logging.getLogger(__name__)
 
@@ -16,8 +15,9 @@ def _get_models() -> Any:
     """
     Функция импорта моделей Habit & User.
     """
-    from habits.models import Habit
     from django.contrib.auth import get_user_model
+
+    from habits.models import Habit
     User = get_user_model()
     return Habit, User
 
@@ -32,11 +32,11 @@ def send_due_habit_reminders(self) -> Dict[str, Any]:
     logger.debug("Запуск send_due_habit_reminders в %s", time_now)
 
     window_start = (time_now - timedelta(seconds=30)).time()
-    window_end =  (time_now + timedelta(seconds=30)).time()
+    window_end = (time_now + timedelta(seconds=30)).time()
 
-    due_queryset = (models.Q(time_of_day__isnull=False) &
-                    models.Q(time_of_day__gte=window_start) &
-                    models.Q(time_of_day__lte=window_end))
+    due_queryset = (models.Q(time_of_day__isnull=False)
+                    & models.Q(time_of_day__gte=window_start)
+                    & models.Q(time_of_day__lte=window_end))
     due_habits = Habit.objects.filter(due_queryset)
 
     client = TelegramClient()

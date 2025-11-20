@@ -1,17 +1,17 @@
-from typing import Any, Dict, List
-from unittest.mock import patch, Mock
+from datetime import datetime, time
+from typing import Any, Dict
+from unittest.mock import Mock, patch
 
 import requests
+from celery import Celery
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AbstractBaseUser
+from django.test import SimpleTestCase, TestCase
+from django.urls import reverse
+from django.utils import timezone
+from rest_framework.test import APIClient, APITestCase
 
 import config.celery as celery_module
-from django.test import TestCase, SimpleTestCase
-from django.urls import reverse
-from django.contrib.auth import get_user_model
-from django.utils import timezone
-
-from rest_framework.test import APITestCase, APIClient
-from datetime import datetime, time
-from celery import Celery
 
 from .models import Habit
 from .services import TelegramClient
@@ -24,7 +24,7 @@ class HabitAPITests(APITestCase):
     """
     Тестирование для проверки CRUD и поведения списка привычек.
     """
-    def setUp(self):
+    def setUp(self) -> None:
         self.client: APIClient = APIClient()
         self.owner_password = "tgRe951"
         self.owner = User.objects.create_user(email="test_2@example.com", password=self.owner_password)
@@ -39,7 +39,7 @@ class HabitAPITests(APITestCase):
         self.assertTrue(access)
         return access
 
-    def test_create_habit_authenticated(self)  -> None:
+    def test_create_habit_authenticated(self) -> None:
         token = self._get_token_for_user(self.owner.email, self.owner_password)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
         payload: Dict[str, Any] = {
@@ -75,10 +75,11 @@ class HabitAPITests(APITestCase):
 
     def test_only_owner_can_delete_private_habit(self) -> None:
         habit = Habit.objects.create(creator=self.owner,
-                             action="Привычка владельца",
-                             is_public=False,
-                             periodicity_days=1,
-                             time_of_day=time(hour=10, minute=0))
+                                     action="Привычка владельца",
+                                     is_public=False,
+                                     periodicity_days=1,
+                                     time_of_day=time(hour=10,
+                                                      minute=0))
         token_other = self._get_token_for_user(self.other.email, self.other_password)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token_other}")
         delete_url = f"/habits/{habit.pk}/"
@@ -145,7 +146,7 @@ class CeleryConfigTests(SimpleTestCase):
         app: Any = getattr(celery_module, "app", None)
         self.assertIsInstance(app, Celery, msg="config.celery.app должен быть экземпляром celery.Celery")
 
-    def test_autodiscover_tasks_in_callable(self):
+    def test_autodiscover_tasks_in_callable(self) -> None:
         app: Any = getattr(celery_module, "app", None)
         self.assertTrue(hasattr(app, "autodiscover_tasks"),
                         msg="Приложение Celery должно иметь метод autodiscover_tasks")
@@ -153,16 +154,19 @@ class CeleryConfigTests(SimpleTestCase):
                         msg="autodiscover_tasks должен быть доступен для вызова")
 
 
-
 class SendDueHabitRemindersTests(TestCase):
     """
     Тесты конфигурации tasks (периодические задания).
     """
     def setUp(self) -> None:
-        self.user_with_chat: User = User.objects.create_user(email="test_4@example.com", password="pass1234")
+        self.user_with_chat: AbstractBaseUser = User.objects.create_user(
+            email="test_4@example.com", password="pass1234"
+        )
         self.user_with_chat.telegram_chat_id = "12345678"
         self.user_with_chat.save()
-        self.user_without_chat: User = User.objects.create_user(email="test_5@example.com", password="pass1234")
+        self.user_without_chat: AbstractBaseUser = User.objects.create_user(
+            email="test_5@example.com", password="pass1234"
+        )
         now: datetime = timezone.localtime()
         self.fixed_now: datetime = timezone.make_aware(
             datetime(year=now.year, month=now.month, day=now.day,
@@ -174,7 +178,7 @@ class SendDueHabitRemindersTests(TestCase):
     @patch("habits.tasks.timezone.localtime")
     def test_send_message_for_due_habit(self, mock_localtime: Mock, mock_send: Mock) -> None:
         mock_localtime.return_value = self.fixed_now
-        due_habit: Habit = Habit.objects.create(
+        _due_habit: Habit = Habit.objects.create(
             creator=self.user_with_chat,
             action="Тестовое действие",
             is_public=False,
@@ -191,12 +195,19 @@ class SendDueHabitRemindersTests(TestCase):
         self.assertIn(str(self.user_with_chat.telegram_chat_id), combined,
                       msg=f"Ожидаемый chat_id {self.user_with_chat.telegram_chat_id} "
                           f"в send_message аргументы вызова: {combined}")
+        sent_list = result.get("sent", [])
+        if sent_list:
+            self.assertEqual(
+                sent_list[0].get("habit_id"),
+                _due_habit.id,
+                msg=f"Ожидаемый habit_id {_due_habit.id} в result['sent'], получили: {sent_list}"
+            )
 
     @patch("habits.tasks.TelegramClient.send_message")
     @patch("habits.tasks.timezone.localtime")
     def test_skip_id_no_chat_id(self, mock_localtime: Mock, mock_send: Mock) -> None:
         mock_localtime.return_value = self.fixed_now
-        due_habit: Habit = Habit.objects.create(
+        Habit.objects.create(
             creator=self.user_without_chat,
             action="Другое тестовое действие",
             is_public=False,

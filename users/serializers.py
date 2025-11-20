@@ -16,7 +16,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("id", "username", "password", "password_confirm")
+        fields = ("id", "email", "first_name", "last_name", "password", "password_confirm")
         read_only_fields = ("id",)
 
     def validate(self, attrs: Dict[str, Any]) -> Dict[str, Any]:

@@ -13,7 +13,7 @@ class UserAdmin(BaseUserAdmin):
 
     fieldsets = (
         (None, {"fields": ("email", "password")}),  # пояснение: базовые поля (логин и пароль)
-        ("Личная информация", {"fields": ("first_name", "last_name")}),
+        ("Личная информация", {"fields": ("first_name", "last_name", "telegram_chat_id")}),
         ("Права и роли", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
         ("Временные метки", {"fields": ("date_joined",)}),
     )

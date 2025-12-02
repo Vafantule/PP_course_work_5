@@ -1,9 +1,9 @@
 import logging
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 import requests
-from requests.exceptions import RequestException
 from django.conf import settings
+from requests.exceptions import RequestException
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +13,11 @@ class TelegramClient:
     Отправка сообщений через Telegram Bot API.
     """
     def __init__(self, token: Optional[str] = None) -> None:
-        self.token: str = token or getattr(settings, "TELEGRAM_BOT_TOKEN", "")
-        self.base_url: str = f"{getattr(settings, 'TELEGRAM_URL')}{self.token}"
+        token_value: Any = token or getattr(settings, "TELEGRAM_BOT_TOKEN", "")
+        self.token: str = token_value if isinstance(token_value, str) else str(token_value)
+        base_url_value: Any = getattr(settings, "TELEGRAM_URL")
+        base_url_str: str = base_url_value if isinstance(base_url_value, str) else str(base_url_value)
+        self.base_url: str = f"{base_url_str}{self.token}"
 
     def send_message(self, chat_id: str, message: str, parse_mode: Optional[str] = "Markdown") -> Dict[str, Any]:
         url: str = f"{self.base_url}/sendMessage"

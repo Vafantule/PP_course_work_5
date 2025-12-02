@@ -1,8 +1,8 @@
-from typing import Dict, Any
+from typing import Any, Dict
 
-from django.urls import reverse
 from django.contrib.auth import get_user_model
-from rest_framework.test import APITestCase, APIClient
+from django.urls import reverse
+from rest_framework.test import APIClient, APITestCase
 
 User = get_user_model()
 

@@ -1,6 +1,6 @@
-from typing import Optional, Any
+from typing import Any, Optional
 
-from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 from django.utils import timezone
 
@@ -45,7 +45,6 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD: str = "email"
     REQUIRED_FIELDS: list[str] = []
-
 
     class Meta:
         verbose_name = "пользователь"

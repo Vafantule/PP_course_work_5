@@ -1,6 +1,7 @@
-from typing import Dict, Any
+from typing import Any, Dict
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AbstractBaseUser
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
@@ -27,7 +28,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
         validate_password(password)
         return attrs
 
-    def create(self, validated_data: Dict[str, Any]) -> User:
+    def create(self, validated_data: Dict[str, Any]) -> AbstractBaseUser:
         password = validated_data.pop("password")
         user = User(**validated_data)
         user.set_password(password)

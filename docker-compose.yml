@@ -1,0 +1,141 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: python:3.13-slim
+    env_file: .env
+    working_dir: /app
+    volumes:
+      - ./:/app:delegated
+      - static_volume:/app/static
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      bash -c "pip install --no-cache-dir -r requirements.txt &&
+               python manage.py migrate --noinput &&
+               gunicorn config.wsgi:application --bind 0.0.0.0:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: >
+        CMD-SHELL curl --fail --silent --show-error --max-time 5 http://127.0.0.1:8000/swagger/ || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  db:
+    image: postgres:17-slim
+    env_file: .env
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DATABASE_PORT:-5432}:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: >
+        CMD-SHELL pg_isready -U ${DATABASE_USER} -d ${DATABASE_NAME} -h 127.0.0.1 -p ${DATABASE_PORT:-5432}
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    env_file: .env
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: >
+        CMD-SHELL redis-cli ping | grep -q PONG
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: python:3.13-slim
+    env_file: .env
+    working_dir: /app
+    volumes:
+      - ./:/app:delegated
+    depends_on:
+      - web
+      - redis
+    command: >
+      bash -c "pip install --no-cache-dir -r requirements.txt &&
+               celery -A config worker --loglevel=info -P eventlet"
+    restart: unless-stopped
+    healthcheck:
+      test: >
+        CMD-SHELL python -c "import os,sys,redis; r=redis.Redis.from_url(os.environ.get('REDIS_URL')); sys.exit(0 if r.ping() else 1)"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: python:3.13-slim
+    env_file: .env
+    working_dir: /app
+    volumes:
+      - ./:/app:delegated
+    depends_on:
+      - web
+      - redis
+    command: >
+      bash -c "pip install --no-cache-dir -r requirements.txt &&
+               celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler"
+    restart: unless-stopped
+    healthcheck:
+      test: >
+        CMD-SHELL python -c "import os,sys,redis; r=redis.Redis.from_url(os.environ.get('REDIS_URL')); sys.exit(0 if r.ping() else 1)"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  nginx:
+    build:
+      context: ./nginx
+    image: nginx:1.27-alpine
+    depends_on:
+      web:
+        condition: service_started
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/nginx.conf:ro
+      - static_data:/app/static:ro
+      - media_data:/app/media:ro
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost/health || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_volume:
+  media_data:

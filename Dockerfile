@@ -22,9 +22,6 @@ RUN pip install --upgrade pip && pip install --no-cache-dir -r /app/requirements
 # Копируем весь код в образ
 COPY . /app
 
-# Сбор статических файлов
-RUN python manage.py collectstatic --noinput || true
-
 EXPOSE 8000
 
 # Проверяем работоспособности веб-сервиса

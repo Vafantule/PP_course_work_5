@@ -111,7 +111,8 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          source: ".env.sample,docker-compose.yml,Dockerfile,nginx/nginx.conf,nginx/Dockerfile,requirements.txt"
+#          source: ".env.sample,docker-compose.yml,Dockerfile,nginx/nginx.conf,nginx/Dockerfile,requirements.txt"
+          source: "docker-compose.yml,Dockerfile,nginx/nginx.conf,nginx/Dockerfile,requirements.txt"
           target: "${{ secrets.REMOTE_PATH }}/pp_course"
 
       - name: Deploy via SSH
@@ -125,7 +126,7 @@ jobs:
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
             cd ${{ secrets.REMOTE_PATH }}/pp_course
-            rm -f .env
+#            rm -f .env
             cat > .env <<EOF
             $ENV_FILE
             EOF

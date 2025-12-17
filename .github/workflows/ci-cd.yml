@@ -99,7 +99,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: docker_build
-#    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
 
     steps:
       - name: Check out code
@@ -115,6 +114,21 @@ jobs:
           source: ".env.sample,docker-compose.yml,nginx/nginx.conf,Dockerfile,requirements.txt"
           target: "${{ secrets.REMOTE_PATH }}/pp_course"
 
+      - name: Write .env
+        uses: appleboy/ssh-action@v1.2.4
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd ${{ secrets.REMOTE_PATH }}/pp_course
+            cat > .env <<'EOF'
+            ${ENV_FILE}
+            EOF
+            chmod 600 .env
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.4
         with:
@@ -124,7 +138,7 @@ jobs:
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
             cd ${{ secrets.REMOTE_PATH }}/pp_course
-            mv .env.example .env  # или запишите реальный .env заранее
+            mv .env.example .env
             docker compose pull || true
             docker compose up -d --build
             docker compose exec web python manage.py migrate --noinput

@@ -104,6 +104,19 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v6
 
+      - name: Prepare remote dir (stop containers, set ownership)
+        uses: appleboy/ssh-action@v1.2.4
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            sudo docker compose down || docker compose down || true
+
+            sudo mkdir -p ${{ secrets.REMOTE_PATH }}/pp_course
+            sudo chown -R ${{ secrets.SSH_USER }}:${{ secrets.SSH_USER }} ${{ secrets.REMOTE_PATH }}/pp_course
+            sudo chmod -R u+rwx,go+rx ${{ secrets.REMOTE_PATH }}/pp_course
+
       - name: Copy files to server
         uses: appleboy/scp-action@v1.0.0
         with:

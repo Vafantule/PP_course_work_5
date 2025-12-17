@@ -114,6 +114,17 @@ jobs:
           source: "docker-compose.yml,Dockerfile,nginx/nginx.conf,nginx/Dockerfile,requirements.txt"
           target: "${{ secrets.REMOTE_PATH }}/pp_course"
 
+      - name: Verify ENV_FILE presence
+        run: |
+          if [ -z "$ENV_FILE" ]; then
+            echo "ERROR: ENV_FILE is empty or not provided"
+            exit 1
+          else
+            echo "ENV_FILE is present (length: ${#ENV_FILE} bytes)"
+          fi
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.4
         env:
@@ -125,14 +136,6 @@ jobs:
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
             cd ${{ secrets.REMOTE_PATH }}/pp_course
-
-            if [ -z "$ENV_FILE" ]; then
-              echo "ERROR: ENV_FILE is empty or not provided"
-              exit 1
-            else
-              echo "ENV_FILE is present (length: ${#ENV_FILE} bytes)"
-            fi
-            
             rm -f .env
             cat > .env <<EOF
             $ENV_FILE

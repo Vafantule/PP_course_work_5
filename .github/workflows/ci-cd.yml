@@ -125,6 +125,13 @@ jobs:
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
             cd ${{ secrets.REMOTE_PATH }}/pp_course
+
+            if [ -z "$ENV_FILE" ]; then
+              echo "ERROR: ENV_FILE is empty or not provided" >&2
+              exit 1
+            fi
+            
+            rm -f .env
             cat > .env <<EOF
             $ENV_FILE
             EOF

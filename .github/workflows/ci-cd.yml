@@ -127,8 +127,6 @@ jobs:
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.4
-        env:
-          ENV_FILE: ${{ secrets.ENV_FILE }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
@@ -137,7 +135,9 @@ jobs:
           script: |
             cd ${{ secrets.REMOTE_PATH }}/pp_course
             
-            printf '%s\n' "$ENV_FILE" > .env
+            cat > .env <<'EOF'
+            ${{ secrets.ENV_FILE }}
+            EOF
             chmod 600 .env
             
             docker compose pull || true

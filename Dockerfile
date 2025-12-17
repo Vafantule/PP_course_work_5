@@ -9,7 +9,7 @@ WORKDIR /app
 
 # Системные зависимости
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends build-essential libpq-dev gcc && \
+    apt-get install -y --no-install-recommends build-essential curl libpq-dev ca-certificates gcc && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

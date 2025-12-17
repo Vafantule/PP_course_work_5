@@ -125,11 +125,11 @@ jobs:
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
             cd ${{ secrets.REMOTE_PATH }}/pp_course
+            rm -f .env
             cat > .env <<EOF
-            $ENV_FILE
-            EOF
+      $ENV_FILE
+      EOF
             chmod 600 .env
-            docker compose pull || true
             docker compose up -d --build
             docker compose exec web python manage.py migrate --noinput
             docker compose exec web python manage.py collectstatic --noinput

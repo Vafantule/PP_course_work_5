@@ -75,8 +75,10 @@ services:
     volumes:
       - ./:/app:delegated
     depends_on:
-      - web
-      - redis
+      web:
+        condition: service_started
+      redis:
+        condition: service_healthy
     command: >
       bash -c "pip install --no-cache-dir -r requirements.txt &&
                celery -A config worker --loglevel=info -P eventlet"
@@ -114,7 +116,7 @@ services:
   nginx:
     build:
       context: ./nginx
-    image: nginx:1.27-alpine
+    image: nginx:1.29-alpine
     depends_on:
       web:
         condition: service_started

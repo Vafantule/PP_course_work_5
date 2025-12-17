@@ -111,8 +111,25 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          source: "docker-compose.yml,Dockerfile,nginx/nginx.conf,nginx/Dockerfile,requirements.txt"
+          source: "."
           target: "${{ secrets.REMOTE_PATH }}/pp_course"
+
+      - name: Check files on server
+        uses: appleboy/ssh-action@v1.2.4
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            cd ${{ secrets.REMOTE_PATH }}/pp_course || { echo "target dir not found"; exit 1; }
+            echo "Files in target directory:"
+            ls -la
+            if [ ! -f manage.py ]; then
+              echo "ERROR: manage.py not found in ${{ secrets.REMOTE_PATH }}/pp_course" >&2
+              exit 1
+            fi
+            echo "OK: manage.py found"
 
       - name: Verify ENV_FILE presence
         run: |
@@ -142,5 +159,23 @@ jobs:
             
             docker compose pull || true
             docker compose up -d --build
-            docker compose exec web python manage.py migrate --noinput
-            docker compose exec web python manage.py collectstatic --noinput
+            
+            sleep 5
+            docker compose ps
+            
+            echo "Last 80 lines of db logs (for debug):"
+            docker compose logs --no-color --tail 80 db || true
+            
+            docker compose exec -T web python manage.py migrate --noinput || (sleep 5 && docker compose exec -T web python manage.py migrate --noinput) || true
+            docker compose exec -T web python manage.py collectstatic -c --noinput || (sleep 5 && docker compose exec -T web python manage.py collectstatic -c --noinput) || true
+
+      - name: Final check — list running containers
+        uses: appleboy/ssh-action@v1.2.4
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            cd ${{ secrets.REMOTE_PATH }}/pp_course || exit 1
+            docker compose ps

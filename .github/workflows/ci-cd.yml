@@ -125,7 +125,6 @@ jobs:
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
             cd ${{ secrets.REMOTE_PATH }}/pp_course
-#            rm -f .env
             cat > .env <<EOF
             $ENV_FILE
             EOF

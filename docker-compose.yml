@@ -3,11 +3,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: python:3.13-slim
+    image: ${APP_IMAGE:-youruser/habit-tracker:latest}
     env_file: .env
     working_dir: /app
     volumes:
-      - ./:/app:delegated
       - static_volume:/app/staticfiles
       - media_data:/app/media
     ports:
@@ -18,9 +17,8 @@ services:
       redis:
         condition: service_healthy
     command: >
-      bash -c "pip install --no-cache-dir -r requirements.txt &&
-               python manage.py migrate --noinput &&
-               python manage.py collectstatic -c --noinput || true &&
+      bash -c "python manage.py migrate --noinput &&
+               (python manage.py collectstatic -c --noinput || true) &&
                gunicorn config.wsgi:application --bind 0.0.0.0:8000"
     restart: unless-stopped
     healthcheck:
@@ -69,19 +67,16 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: python:3.13-slim
+    image: ${APP_IMAGE:-youruser/habit-tracker:latest}
     env_file: .env
     working_dir: /app
-    volumes:
-      - ./:/app:delegated
     depends_on:
       web:
         condition: service_started
       redis:
         condition: service_healthy
     command: >
-      bash -c "pip install --no-cache-dir -r requirements.txt &&
-               celery -A config worker --loglevel=info -P eventlet"
+      bash -c "celery -A config worker --loglevel=info -P eventlet"
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import os,sys,redis; r=redis.Redis.from_url(os.environ.get('REDIS_URL')); sys.exit(0 if r.ping() else 1)\""]
@@ -94,17 +89,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: python:3.13-slim
+    image: ${APP_IMAGE:-youruser/habit-tracker:latest}
     env_file: .env
     working_dir: /app
-    volumes:
-      - ./:/app:delegated
     depends_on:
       - web
       - redis
     command: >
-      bash -c "pip install --no-cache-dir -r requirements.txt &&
-               celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler"
+      bash -c "celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler"
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import os,sys,redis; r=redis.Redis.from_url(os.environ.get('REDIS_URL')); sys.exit(0 if r.ping() else 1)\""]

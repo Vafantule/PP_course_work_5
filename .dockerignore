@@ -1,6 +1,43 @@
+# Исключаем всё по умолчанию
 **
+
+# Нужные файлы/директории для сборки
 !config
 !habits
 !users
 !manage.py
 !requirements.txt
+!pyproject.toml
+!poetry.lock
+!mypy.ini
+!.flake8
+!.coveragerc
+
+# Инфраструктура (Docker/Compose/nginx)
+!Dockerfile
+!docker-compose.yml
+!nginx
+!nginx/**
+
+# Утилитарные файлы
+!.env.sample
+!.gitignore
+
+.git
+.github
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+*.log
+*.sqlite3
+.env
+*.env
+.env.*
+.venv
+.envrc
+.dist
+build
+dist
+staticfiles
+media

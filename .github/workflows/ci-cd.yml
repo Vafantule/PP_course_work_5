@@ -127,7 +127,7 @@ jobs:
           ENV_FILE: ${{ secrets.ENV_FILE }}
 
       - name: Copy compose + nginx to server
-        uses: appleboy/scp-action@v1.2.4
+        uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}

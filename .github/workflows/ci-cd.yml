@@ -104,15 +104,16 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v6
 
-      - name: Copy compose + nginx to server
-        uses: appleboy/scp-action@v1.2.4
+      - name: Prepare remote dir
+        uses: appleboy/ssh-action@v1.2.4
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          source: "docker-compose.yml,nginx"
-          target: "${{ secrets.REMOTE_PATH }}/pp_course"
+          script: |
+            sudo mkdir -p ${{ secrets.REMOTE_PATH }}/pp_course
+            sudo chown -R ${{ secrets.SSH_USER }}:${{ secrets.SSH_USER }} ${{ secrets.REMOTE_PATH }}/pp_course
+            sudo chmod -R u+rwx,go+rx ${{ secrets.REMOTE_PATH }}/pp_course
 
       - name: Verify ENV_FILE presence
         run: |
@@ -125,8 +126,20 @@ jobs:
         env:
           ENV_FILE: ${{ secrets.ENV_FILE }}
 
+      - name: Copy compose + nginx to server
+        uses: appleboy/scp-action@v1.2.4
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          source: "DockerFile,docker-compose.yml,nginx"
+          target: "${{ secrets.REMOTE_PATH }}/pp_course"
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.4
+        env:
+          APP_IMAGE: ${{ env.APP_IMAGE }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
@@ -134,7 +147,6 @@ jobs:
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
             set -e
-            mkdir -p "${{ secrets.REMOTE_PATH }}/pp_course"
             cd "${{ secrets.REMOTE_PATH }}/pp_course"
             
             cat > .env <<'EOF'
